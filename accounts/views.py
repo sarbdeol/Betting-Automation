@@ -109,6 +109,7 @@ def upload_excel(request):
 
                     usernameEl = browser.find_element(By.XPATH, xPathEmail)
                     passwordEl = browser.find_element(By.XPATH, xPathPassword)
+                    usernameEl.clear()
                     usernameEl.send_keys(username)
                     time.sleep(1)
                     passwordEl.send_keys(password)
@@ -139,6 +140,15 @@ def upload_excel(request):
                         print(f' Bet Column: {bet_columns}, Bet: {bet.text}')
                         bet.click()
                 print(bet_columns)
+
+            def logout():
+                logout = browser.find_element(By.XPATH, '//*[@id="j_userInfo"]/span')
+                logout.click()
+                time.sleep(1)
+                logout_btn = browser.find_element(By.XPATH, '//*[@id="j_userInfo"]/ul/li[8]')
+                logout_btn.click()
+                print('log out')
+                time.sleep(3)
             def execute_bet():
                 print('execute_bet')
                 time.sleep(4)
@@ -191,47 +201,51 @@ def upload_excel(request):
                 print(total_columns)
                 all_results = []
 
-                print('sportBet_accounts',sportBet_accounts)
-                random_accounts = (sportBet_accounts)
-                print(len(random_accounts))
-                for i in range(0,len(random_accounts)):
-                    username = random_accounts[i]["username"]
-                    password =random_accounts[i]["password"]
-                # # Replace 'username' and 'password' with actual values
-                # username = '0598029696'
-                # password = 'NVW6kfc4eax_wnc9etm'
+                print('sportBet_accounts',len(sportBet_accounts))
+               # Assuming you have 2 accounts
+                num_accounts = len(sportBet_accounts)
+                columns_per_account = df.shape[1] // num_accounts
 
-                        
+                # Iterate through each account
+                for account_index, account in enumerate(sportBet_accounts):
+                    username = account["username"]
+                    password = account["password"]
 
                     try:
-                    # Remove empty strings and single quotes
+                        # Remove empty strings and single quotes
                         urls_list = [item.strip("'") for item in urls if item]
-                    # Iterate through columns
-                        for i in range(len(df.columns)):
-                            # Iterate through URLs
-                            for j, url in enumerate(urls_list):
-                                # Use the value from the corresponding column and row
-                                bet = df.iloc[j, i]
+                        
+                        # Determine the range of columns for the current account
+                        start_col = account_index * columns_per_account
+                        end_col = (account_index + 1) * columns_per_account
 
-                                # Call the placebet function
-                                print(f'URL: {url}, Column: {i + 1}, Row: {j + 1}, Bet: {bet}')
+                        # Iterate through columns for the current account
+                        for col_index in range(start_col, end_col):
+                            # Get the bets for the current column
+                            bets = df.iloc[:, col_index]
+
+                            # Iterate through rows and place bets
+                            for j, bet in enumerate(bets):
+                                # Use the value from the corresponding column and row
+                                url = urls[j]  # Use the URL corresponding to the current row
+                                print(f'Account: {username}, URL: {url}, Column: {col_index + 1}, Row: {j + 1}, Bet: {bet}')
                                 try:
                                     placebet(url, bet, username, password)
-                                except:
-                                    print('match over')
-                                    pass
-
-                        
+                                except Exception as e:
+                                    print(f'Error placing bet: {e}')
 
                                 time.sleep(2)
 
-                            # Execute the betslip function after completing all URLs for a column
-                            execute_bet()
+        
 
-                        
-                        # cashout_func()
+                                # Execute the betslip function after completing all URLs for a column
+                            execute_bet()
+                    
+                            
+                            # cashout_func()
                     except Exception as e:
                         print(e)
+                    logout()
         # elif website == "Xbet":
         #     if excel_file:
         #         df = pd.read_excel(excel_file)
