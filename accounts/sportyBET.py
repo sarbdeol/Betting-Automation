@@ -46,10 +46,9 @@ def placebet(url, bet_columns, username, password):
     except :
         pass
 
-    correct_score = browser.find_element(By.XPATH, "//*[text()='Correct Score']")
-    correct_score.click()
+    correct_score = browser.find_element(By.XPATH, "//span[@class='bet-title__label bet-title__text bet-title-label' and normalize-space(text())='Correct Score']")
     table = browser.find_element(By.XPATH,
-                                    "//span[text()='Correct Score']/ancestor::div[1]/ancestor::div[1]/ancestor::div[1]/following-sibling::div")
+                                    "//span[@class='bet-title__label bet-title__text bet-title-label' and normalize-space(text())='Correct Score']/ancestor::div/following-sibling::div")
 
     # for bet_column in bet_columns:
         # search_values = []
@@ -58,10 +57,10 @@ def placebet(url, bet_columns, username, password):
         #     for row in reader:
         #         search_values.append(row[bet_column])
 
-    bets = table.find_elements(By.XPATH, ".//span[@class='m-table-cell-item']")
+    bets = table.find_elements(By.XPATH, ".//span[@class='bet_type']")
     for bet in bets:
-        if bet.text == bet_columns:
-            print(f' Bet Column: {bet_columns}, Bet: {bet.text}')
+        if bet.text.split('Correct Score')[1] == bet_columns:
+            print(f' Bet Column: {bet_columns}, Bet: {bet.text.split("Correct Score")[1]}')
             bet.click()
     print(bet_columns)
 def execute_bet():

@@ -262,50 +262,80 @@ def upload_excel(request):
             # options.add_argument('--headless')
             browser = webdriver.Chrome()
 
-            # 1xbet login xpaths
-            xPathLogin = '//*[@id="j_page_header"]/div[1]/div/div[1]/div[1]/div[2]/div[3]/div[1]/button'
-            xPathEmail = '//*[@id="j_page_header"]/div[1]/div/div[1]/div[1]/div[2]/div[2]/div[1]/input'
-            xPathPassword = '//*[@id="j_page_header"]/div[1]/div/div[1]/div[1]/div[2]/div[3]/div[1]/input'
-            xPathSubmitLogin = '//*[@id="j_page_header"]/div[1]/div/div[1]/div[1]/div[2]/div[3]/div[1]/button'
-            # 1xbet login successful confirmation xpath
-            xPathMyAccount = '//*[@id="j_userInfo"]/span'
+            xPathLogin = '//*[@id="curLoginForm"]/span[1]'
+            xPathEmail =  '//*[@id="auth_id_email"]'
+            xPathPassword = '//*[@id="auth-form-password"]'
+            xPathSubmitLogin = '//*[@id="loginout"]/div[2]/div/div/div[2]/div[1]/form/button'
 
+            #1xbet login successful confirmation xpath
+            xPathMyAccount = '//*[@id="app"]/div[3]/header/div/div[1]/div/div/div/button[2]/span/span[1]/span[1]/span[1]'
+
+            #1xbet currency confirmation xpath
+            xPathConfirmCurrency = '//*[@id="approve_accept"]'
+
+            
+                
             def placebet(url, bet_columns, username, password):
                 browser.get(url)
-                time.sleep(1)
+                time.sleep(5)
                 try:
-                    browser.find_element(By.XPATH, xPathLogin).click()
+                    time.sleep(5)
+                    browser.find_element(By.XPATH,xPathLogin).click()
                     time.sleep(3)
-
-                    usernameEl = browser.find_element(By.XPATH, xPathEmail)
-                    passwordEl = browser.find_element(By.XPATH, xPathPassword)
-                    usernameEl.clear()
+                    # browser.find_element(By.XPATH,'//*[@id="curLoginForm"]/span[1]').click()
+                    time.sleep(1)
+                    usernameEl = browser.find_element(By.XPATH,xPathEmail)
+                    passwordEl = browser.find_element(By.XPATH,xPathPassword)
                     usernameEl.send_keys(username)
                     time.sleep(1)
                     passwordEl.send_keys(password)
                     time.sleep(1)
-                    browser.find_element(By.XPATH, xPathSubmitLogin).click()
-                    WebDriverWait(browser, 60).until(EC.presence_of_element_located((By.XPATH, xPathMyAccount)))
-                    time.sleep(2)
-
-
-                except :
+                    browser.find_element(By.XPATH,xPathSubmitLogin).click()
+                    WebDriverWait(browser, 50000).until(EC.presence_of_element_located((By.XPATH, xPathMyAccount)))
+                except:
                     pass
-
-                correct_score = browser.find_element(By.XPATH, "//*[text()='Correct Score']")
-                correct_score.click()
-                table = browser.find_element(By.XPATH,
-                                                "//span[text()='Correct Score']/ancestor::div[1]/ancestor::div[1]/ancestor::div[1]/following-sibling::div")
-
                 
-                bets = table.find_elements(By.XPATH, ".//span[@class='m-table-cell-item']")
+                try:
+                    
+                    get_toggle=browser.find_element(By.XPATH,".//button[@class='scoreboard-nav__view-item scoreboard-nav__btn scoreboard-nav__btn--icn-only']")
+                    get_toggle.click()
+                    time.sleep(5)
+                    # browser.execute_script("window.scrollBy(50,  window.innerHeight);")
+                    # time.sleep(10)
+
+                    slider_off=browser.find_element(By.XPATH,".//label[@class='bet-switch__label active']")
+                    slider_off.click()
+                    print('click slider')
+                except:
+                    print('already collapse')
+                time.sleep(1)
+                correct_score = browser.find_element(By.XPATH, "//span[@class='bet-title__label bet-title__text bet-title-label' and normalize-space(text())='Correct Score']")
+                correct_score.click()
+                time.sleep(1)
+                table = browser.find_element(By.XPATH,
+                                                "//span[@class='bet-title__label bet-title__text bet-title-label' and normalize-space(text())='Correct Score']/ancestor::div/following-sibling::div")
+
+                # for bet_column in bet_columns:
+                    # search_values = []
+                    # with open('output.csv', 'r') as csvfile:
+                    #     reader = csv.DictReader(csvfile)
+                    #     for row in reader:
+                    #         search_values.append(row[bet_column])
+
+                bets = table.find_elements(By.XPATH, ".//span[@class='bet_type']")
                 for bet in bets:
-                    if bet.text == bet_columns:
-                        print(f' Bet Column: {bet_columns}, Bet: {bet.text}')
-                        bet.click()
+                    
+                    if bet:
+                        try:
+                            # print('bet on correct score',bet.text.split('Correct Score')[1])
+                            if bet.text.split('Correct Score')[1].strip() == bet_columns.replace(':','-'):
+                                print(f" Bet Column: {bet_columns.replace(':','-')}, Bet: {bet.text.split('Correct Score')[1]}")
+                                bet.click()
+                        except:
+                            pass
                 print(bet_columns)
 
-            def logout():
+            def logout_xbet():
                 logout = browser.find_element(By.XPATH, '//*[@id="j_userInfo"]/span')
                 logout.click()
                 time.sleep(1)
@@ -314,15 +344,15 @@ def upload_excel(request):
                 print('log out')
                 time.sleep(3)
             def execute_bet():
-                print('execute_bet')
-                time.sleep(4)
                 browser.execute_script("window.scrollTo(0, 0);")
-                count = browser.find_element(By.XPATH, './/span[@class="m-input-com"]/input')
+                count=browser.find_element(By.XPATH,'.//input[@class="cpn-value-controls__input"]')
                 count.click()
-                count.send_keys(Keys.CONTROL + "a")
-                count.send_keys(Keys.BACKSPACE)
-                count.send_keys('0.1')
-                time.sleep(2)
+                count.send_keys(Keys.CONTROL + "a")  # Select all text in the input field
+                count.send_keys(Keys.BACKSPACE) 
+                count.send_keys('0.5')
+                time.sleep(5)
+
+                # pending for xbet
                 place = browser.find_element(By.XPATH, '//*[@id="j_betslip"]//button')
                 place.click()
                 print('place bet click')
@@ -409,7 +439,7 @@ def upload_excel(request):
                             # cashout_func()
                     except Exception as e:
                         print(e)
-                    logout()
+                    logout_xbet()
             execute_Xbet()
         if selected_bot == "C":
             print('Betway')
