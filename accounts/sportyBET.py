@@ -1,5 +1,5 @@
 from selenium import webdriver
-import csv
+import csv,logging
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -11,7 +11,9 @@ from time import sleep
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 
-
+logging.basicConfig(filename='logfile.log', level=logging.DEBUG,
+                    format='%(asctime)s [%(levelname)s]: %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
 options = Options()
 options.add_argument('--disable-gpu')
 # options.add_argument('--headless')
@@ -29,6 +31,7 @@ def placebet(url, bet_columns, username, password):
     browser.get(url)
     time.sleep(1)
     try:
+        
         browser.find_element(By.XPATH, xPathLogin).click()
         time.sleep(3)
 
@@ -39,16 +42,17 @@ def placebet(url, bet_columns, username, password):
         passwordEl.send_keys(password)
         time.sleep(1)
         browser.find_element(By.XPATH, xPathSubmitLogin).click()
-        WebDriverWait(browser, 60).until(EC.presence_of_element_located((By.XPATH, xPathMyAccount)))
-        time.sleep(2)
+        # WebDriverWait(browser, 60).until(EC.presence_of_element_located((By.XPATH, xPathMyAccount)))
+        # time.sleep(2)
 
 
     except :
         pass
 
-    correct_score = browser.find_element(By.XPATH, "//span[@class='bet-title__label bet-title__text bet-title-label' and normalize-space(text())='Correct Score']")
+    correct_score = browser.find_element(By.XPATH, "//*[text()='Correct Score']")
+    correct_score.click()
     table = browser.find_element(By.XPATH,
-                                    "//span[@class='bet-title__label bet-title__text bet-title-label' and normalize-space(text())='Correct Score']/ancestor::div/following-sibling::div")
+                                    "//span[text()='Correct Score']/ancestor::div[1]/ancestor::div[1]/ancestor::div[1]/following-sibling::div")
 
     # for bet_column in bet_columns:
         # search_values = []
@@ -57,10 +61,11 @@ def placebet(url, bet_columns, username, password):
         #     for row in reader:
         #         search_values.append(row[bet_column])
 
-    bets = table.find_elements(By.XPATH, ".//span[@class='bet_type']")
+    bets = table.find_elements(By.XPATH, ".//span[@class='m-table-cell-item']")
     for bet in bets:
-        if bet.text.split('Correct Score')[1] == bet_columns:
-            print(f' Bet Column: {bet_columns}, Bet: {bet.text.split("Correct Score")[1]}')
+        if bet.text == bet_columns:
+            print(f' Bet Column: {bet_columns}, Bet: {bet.text}')
+            logging.info(f' Bet Column: {bet_columns}, Bet: {bet.text}')
             bet.click()
     print(bet_columns)
 def execute_bet():
@@ -72,6 +77,16 @@ def execute_bet():
     count.send_keys(Keys.BACKSPACE)
     count.send_keys('0.1')
     time.sleep(2)
+    try:
+        Get_Text_Path =  browser.find_element(By.XPATH, "//div[@class='m-value bold m-value-too-long']").text
+        # Points = browser.find_element(By.XPATH,"/html/body/div[1]/div[2]/div[2]/div/div[3]/div/aside/div[2]/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div[1]/span").text
+        
+        print('#######################################################################')
+        print("==========================",Get_Text_Path,"=============================")
+        print('#######################################################################')
+    except:
+        pass
+
     place = browser.find_element(By.XPATH, '//*[@id="j_betslip"]//button')
     place.click()
     print('place bet click')
@@ -118,9 +133,8 @@ def execute():
 
     csv_file_path = 'bets.csv'
     urls = [
-        'https://www.sportybet.com/gh/sport/football/England/Premier_League/Man_City_vs_Liverpool/sr:match:41763091',
-        'https://www.sportybet.com/gh/sport/football/England/Premier_League/Burnley_vs_West_Ham/sr:match:41763083',
-        'https://www.sportybet.com/gh/sport/football/England/Premier_League/Luton_vs_Crystal_Palace/sr:match:41763089'
+        'https://www.sportybet.com/gh/sport/football/Turkiye/Super_Lig/Caykur_Rizespor_vs_Hatayspor_Antakya/sr:match:42415741',
+
     ]
 
     try:
@@ -133,17 +147,18 @@ def execute():
             for j, url in enumerate(urls):
                 # Use the value from the corresponding column and row
                 bet = df.iloc[j, i]
+                print("+++++++++++++++++++++++++++++++++++++")
+                print("======",bet,"=======")
+                print("+++++++++++++++++++++++++++++++++++++")
 
                 # Call the placebet function
                 print(f'URL: {url}, Column: {i + 1}, Row: {j + 1}, Bet: {bet}')
+                
                 try:
                     placebet(url, bet, username, password)
                 except:
                     print('match over')
-                    pass
-
-        
-
+                    logging.error(f'Error in placebet function: {e}')
                 time.sleep(5)
 
             # Execute the betslip function after completing all URLs for a column
@@ -153,5 +168,6 @@ def execute():
         cashout_func()
     except Exception as e:
         print(e)
+        logging.error(f'Error in execute function: {e}')
 if __name__ == "__main__":
     execute()

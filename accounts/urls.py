@@ -8,6 +8,7 @@ urlpatterns = [
     path('execute/', views.execute, name='execute'),
     path('upload_excel/', views.upload_excel, name='upload_excel'),
     path('get_account_choices/', views.get_account_choices, name='get_account_choices'),
+    path('json-data/', views.json_data, name='json_data')
 ]
 
 
