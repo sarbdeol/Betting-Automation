@@ -1,29 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Execute</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
    <style>
     body {
         font-family: Arial, sans-serif;
-      }
+    }
   
-      /* Styling for overlay background */
-      .modal-overlay {
+    /* Styling for overlay background */
+    .modal-overlay {
         display: none;
         position: fixed;
         top: 0;
         left: 0;
-        width: 20%;
-        height: 20%;
+        width: 100%;
+        height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
         justify-content: center;
         align-items: center;
       }
   
-      /* Styling for modal content */
-      .modal-content {
+    /* Styling for modal content */
+    .modal-content {
         background-color: #fff;
         padding: 20px;
         border-radius: 8px;
@@ -31,8 +33,8 @@
         text-align: center;
       }
   
-      /* Close button styling */
-      .close-btn {
+    /* Close button styling */
+    .close-btn {
         cursor: pointer;
         color: #333;
         font-size: 18px;
@@ -40,13 +42,12 @@
         position: absolute;
         top: 10px;
         right: 10px;
-      }
+    }
    </style>
 </head>
 <body>
 
     <div id="json-data-container"></div>
-
 
 
 
@@ -64,6 +65,7 @@
         </ul>
     </nav>
 
+
     <div class="container mt-4">
         <h1 class="text-center">Execute</h1>
         <button class="btn btn-primary" id="newBotBtn">New Bot</button>
@@ -73,29 +75,7 @@
             </li>
         </ul>
 
-        <button class="btn btn-primary" onclick="openModal()">SportyBet Log</button>
-
-        <!-- The Table Modal -->
-        <div class="modal-overlay" id="myModal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 class="btn btn-primary">SportyBet Bot Logs</h2>
-            <table border="1">
-            <tr>
-                <th>Account 1</th>
-                <th>Account 2</th>
-                <th>Account 3</th>
-            </tr>
-            <tr>
-                <td>5-5</td>
-
-                <td>2-3</td>
-                <td>3-4</td>
-            </tr>
-
-            </table>
-        </div>
-        </div>
+       
 
         <div class="tab-content" id="botTabContent">
             <div class="tab-pane fade show active" id="botTab1">
@@ -126,7 +106,7 @@
                                         <!-- Repeat similar structure for Bot B -->
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" id="botB" name="bot" value="B">
-                                            <label class="form-check-label" for="botB">1xbet</label>
+                                            <label class="form-check-label" for="botB">SoccaBet</label>
                                         </div>
                                         <div class="form-group">
                                             <!-- Text fields for URLs for Bot B -->
@@ -168,69 +148,75 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-
+    <script src="https://stlerckpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         $(document).ready(function() {
 
-            function fetchData() {
+            //Execute button click
 
+
+            $("#executeBtn").on("click", function() {
+                // Make an AJAX request to clear the CSV file
+                $.ajax({
+                    url: "{% url 'submit_data' %}",  // Update with the correct URL for your submit_data view
+                    type: "POST",
+                    dataType: 'json',
+                    success: function(data) {
+                        // Process the response (data) as needed
+                        console.log("CSV file cleared successfully!");
+                        console.log(data);  // Response from the server
+                    },
+                    error: function() {
+                        alert("Error clearing CSV file.");
+                    }
+                });
+            });
+
+
+
+        
+            function fetchData() {
                 $.ajax({
                     url: '/json-data/',  // URL mapping to your json_data view
                     type: 'GET',
                     dataType: 'json',
                     success: function(response) {
                         if ('data' in response) {
-                            // Display the JSON data in your HTML
-                            var modifiedBet = response.data.Bet.replace(/\:/g, '-');
-                            var BetValue = $('#json-data-container').html('<pre>' + JSON.stringify(modifiedBet, null, 2) + '</pre>');
-                 
-                            
+                            response.data.forEach(function(originalBet) {
+                                var modifiedBet = originalBet.Bet.replace(/\:/g, '-');
+                                $('#json-data-container').html('<pre>' + JSON.stringify(response.data) + '</pre>');
+                            })
                         } else if ('error' in response) {
                             console.error(response.error);
-                            
                         }
                     },
                     error: function(xhr, status, error) {
-                       
                         console.error('Error fetching JSON data:', error);
                     }
                 });
             }
-    
+
             // Fetch data initially
             fetchData();
-    
             // Set up a timer to fetch data every 2 seconds
             setInterval(fetchData, 2000);
-  
-
-
-
-
-
-
             $("#newBotBtn").on("click", function() {
-                // Code to add a new bot dynamically
-                // ...
             });
-    
+
             $("#uploadForm1").on("submit", function(e) {
                 e.preventDefault();
                 const formData = new FormData(this);
-    
+
                 // Include selected bots in your AJAX request or other logic
                 const selectedBots = $("input[name='bot']:checked").map(function () {
                     return this.value;
                 }).get();
                 formData.append('selected_bots', selectedBots);
-    
+
                 // Append the file input to formData
                 const fileInput = $("#excelFile1")[0].files[0];
                 formData.append('excelFile', fileInput);
-    
+
                 $.ajax({
                     url: "{% url 'upload_excel' %}",
                     type: "POST",
@@ -256,20 +242,3 @@
           document.getElementById("myModal").style.display = "flex";
         }
       
-        function closeModal() {
-          document.getElementById("myModal").style.display = "none";
-        }
-      
-        // Close the modal if the overlay is clicked
-        window.onclick = function(event) {
-          if (event.target === document.getElementById("myModal")) {
-            closeModal();
-          }
-        };
-    
-      </script>
-
-    
-
-</body>
-</html>

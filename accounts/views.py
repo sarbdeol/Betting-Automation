@@ -40,6 +40,7 @@ def add_account(request):
 def dashboard(request):
     return render(request, 'accounts/dashboard.html')
 def execute(request):
+    clear_csv()
     return render(request, 'accounts/execute.html')
 
 
@@ -48,7 +49,6 @@ def upload_excel(request):
     if request.method == 'POST':
         selected_bot = request.POST.get('selected_bots')
         urls = [request.POST.get(f'urlBot{selected_bot}{i}') for i in range(1, 8)]
-        print(urls,"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         uploaded_file = request.FILES['excelFile']
         response_data = {
             'selected_bot': selected_bot,
@@ -211,9 +211,16 @@ def upload_excel(request):
                                 print(f'Account: {username}, URL: {url}, Column: {col_index + 1}, Row: {j + 1}, Bet: {bet}')
                                 
                                 if url != '':
-                                    with open("sample.json", 'a') as file:
-                                        json.dump({"Bet": bet}, file)
-    
+                                    data = [{'Bet': bet}] 
+                                    csv_file_path = 'Sportybet.csv'
+                                    with open(csv_file_path, 'a', newline='') as csv_file:
+                                        csv_writer = csv.DictWriter(csv_file, fieldnames=data[0].keys())
+                                        # Check if the file is empty (no header) and write the header if needed
+                                        if csv_file.tell() == 0:
+                                            csv_writer.writeheader()
+                                        csv_writer.writerows(data)
+                                    print(f'CSV file "{csv_file_path}" has been updated.')
+
                                     print("############################################################################################")
                                     print("====================================",bet,"===============================================")
                                     print("############################################################################################")
@@ -225,12 +232,13 @@ def upload_excel(request):
                                 time.sleep(2)
                                 # Execute the betslip function after completing all URLs for a column
                             execute_bet()
-                        logging.shutdown()
                             # cashout_func()
                     except Exception as e:
                         print(e)
                     logout()
+                    clear_csv()          
             execute_sportybet()
+            
 
         return JsonResponse(response_data)
     
@@ -239,14 +247,31 @@ def get_account_choices(request):
     accounts = UserAccount.objects.all().values_list('username', flat=True)
     return JsonResponse({'accounts': list(accounts)})
 
-
 def json_data(request):
-    json_file_path = 'sample.json'
+    csv_file_path = 'Sportybet.csv'
     try:
-        with open(json_file_path, 'r') as json_file:
-            data = json.load(json_file)
-        return JsonResponse({'data': data})
+        with open(csv_file_path, 'r', newline='') as csv_file:
+            csv_reader = csv.DictReader(csv_file)
+            print(f"Column names: {csv_reader.fieldnames}")
+            # Read rows into a list
+            data_list = [row for row in csv_reader]
+        return JsonResponse({'data': data_list})
     except FileNotFoundError:
-        return JsonResponse({'error': 'JSON file not found'}, status=404)
-    except json.JSONDecodeError as e:
-        return JsonResponse({'error': f'Error decoding JSON: {e}'}, status=500)
+        return JsonResponse({'error': 'CSV file not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'Error reading CSV: {e}'}, status=500)
+    
+def clear_csv(file_path='Sportybet.csv'):
+    with open(file_path, 'w', newline='') as csvfile:
+        pass
+
+
+def submit_data(request):
+    if request.method == 'POST':
+        try:
+            clear_csv()
+            return JsonResponse({'message': 'CSV file cleared successfully'})
+        except Exception as e:
+            return JsonResponse({'message': f'Error clearing CSV file: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'message': 'Invalid request method'}, status=400)
