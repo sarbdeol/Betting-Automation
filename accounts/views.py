@@ -55,7 +55,7 @@ def upload_excel(request):
             'URLS': urls,
             'csv_path': f"{uploaded_file}"  # Assuming your file field is in models and has an `upload_to` parameter
         }
-        print(response_data)
+
         if selected_bot == "A":
             sportBet_accounts = []
             accounts = UserAccount.objects.all().values_list('email', 'username', 'password', 'website')
@@ -79,6 +79,9 @@ def upload_excel(request):
             xPathMyAccount = '//*[@id="j_userInfo"]/span'
 
             def placebet(url, bet_columns, username, password):
+                print("======================================================")
+                print(url,"==========",bet_columns,"===============")
+                print("======================================================")
                 browser.get(url)
                 time.sleep(1)
                 try:
@@ -92,7 +95,7 @@ def upload_excel(request):
                     passwordEl.send_keys(password)
                     time.sleep(1)
                     browser.find_element(By.XPATH, xPathSubmitLogin).click()
-                    # WebDriverWait(browser, 60).until(EC.presence_of_element_located((By.XPATH, xPathMyAccount)))
+                    WebDriverWait(browser, 60).until(EC.presence_of_element_located((By.XPATH, xPathMyAccount)))
                     # time.sleep(2)
                 except :
                     pass
@@ -138,6 +141,18 @@ def upload_excel(request):
                 print('place bet click')
                 time.sleep(7)
                 place.click()
+                get_Bet_Info =  browser.find_element(By.XPATH, '//*[@id="j_betslip"]/div[2]/div[2]/div/div[2]/div/div[2]/div[1]/div[1]/span').text
+                # Create Csv File_______________________________________
+                data = [{'Bet': get_Bet_Info}] 
+                csv_file_path = 'Sportybet.csv'
+                with open(csv_file_path, 'a', newline='') as csv_file:
+                    csv_writer = csv.DictWriter(csv_file, fieldnames=data[0].keys())
+                    # Check if the file is empty (no header) and write the header if needed
+                    if csv_file.tell() == 0:
+                        csv_writer.writeheader()
+                    csv_writer.writerows(data)
+                print(f'CSV file "{csv_file_path}" has been updated.')
+                print("___________________________",get_Bet_Info,"_______________________________")
                 try:
                     confirm = browser.find_element(By.XPATH, "//*[text()='Confirm']") #not
                     confirm.click()
@@ -190,49 +205,30 @@ def upload_excel(request):
                # Assuming you have 2 accounts
                 num_accounts = len(sportBet_accounts)
                 columns_per_account = df.shape[1] // num_accounts
+
                 # Iterate through each account
                 for account_index, account in enumerate(sportBet_accounts):
                     username = account["username"]
                     password = account["password"]
                     try:
-                        # Remove empty strings and single quotes
                         urls_list = [item.strip("'") for item in urls if item]
-                        # Determine the range of columns for the current account
                         start_col = account_index * columns_per_account
                         end_col = (account_index + 1) * columns_per_account
                         # Iterate through columns for the current account
                         for col_index in range(start_col, end_col):
-                            # Get the bets for the current column
                             bets = df.iloc[:, col_index]
-                            # Iterate through rows and place bets
                             for j, bet in enumerate(bets):
-                                # Use the value from the corresponding column and row
                                 url = urls[j]  # Use the URL corresponding to the current row
-                                print(f'Account: {username}, URL: {url}, Column: {col_index + 1}, Row: {j + 1}, Bet: {bet}')
-                                
+                                # print(f'Account: {username}, URL: {url}, Column: {col_index + 1}, Row: {j + 1}, Bet: {bet}')
                                 if url != '':
                                     data = [{'Bet': bet}] 
-                                    csv_file_path = 'Sportybet.csv'
-                                    with open(csv_file_path, 'a', newline='') as csv_file:
-                                        csv_writer = csv.DictWriter(csv_file, fieldnames=data[0].keys())
-                                        # Check if the file is empty (no header) and write the header if needed
-                                        if csv_file.tell() == 0:
-                                            csv_writer.writeheader()
-                                        csv_writer.writerows(data)
-                                    print(f'CSV file "{csv_file_path}" has been updated.')
-
-                                    print("############################################################################################")
-                                    print("====================================",bet,"===============================================")
-                                    print("############################################################################################")
-                                try:
-                                    placebet(url, bet, username, password)
-                                except:
-                                    # print(f'Error placing bet: {e}')
-                                    pass
-                                time.sleep(2)
-                                # Execute the betslip function after completing all URLs for a column
-                            execute_bet()
-                            # cashout_func()
+                                    try:
+                                        placebet(url, bet, username, password) 
+                                    except Exception as e:
+                                        print("#############################################################################################",e,
+                                            "#############################################################################################")
+                                    execute_bet()
+                #             # cashout_func()
                     except Exception as e:
                         print(e)
                     logout()
