@@ -48,7 +48,8 @@
 <body>
 
     <div id="json-data-container"></div>
-
+    <div id="Betway-json-data-container"></div>
+   
 
 
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -149,7 +150,7 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stlerckpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script>
+    <script> 
         $(document).ready(function() {
 
             //Execute button click
@@ -167,14 +168,14 @@
                         console.log(data);  // Response from the server
                     },
                     error: function() {
-                        alert("Error clearing CSV file.");
+                        console("Error clearing CSV file.");
                     }
                 });
             });
 
 
 
-        
+            // SportBet call every two seconds _________________________
             function fetchData() {
                 $.ajax({
                     url: '/json-data/',  // URL mapping to your json_data view
@@ -203,6 +204,37 @@
             $("#newBotBtn").on("click", function() {
             });
 
+            // Betway call every two seconds _________________________
+            function fetch_Betway_Data() {
+                $.ajax({
+                    url: '/betway-json-data/',  // URL mapping to your json_data view
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if ('data' in response) {
+                            response.data.forEach(function(originalBet) {
+                                var modifiedBet = originalBet.Bet.replace(/\:/g, '-');
+                                $('#Betway-json-data-container').html('<pre>' + JSON.stringify(response.data) + '</pre>');
+                            })
+                        } else if ('error' in response) {
+                            console.error(response.error);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching JSON data:', error);
+                    }
+                });
+            }
+
+            // Fetch data initially
+            fetch_Betway_Data();
+            // Set up a timer to fetch data every 2 seconds
+            setInterval(fetch_Betway_Data, 2000);
+            $("#newBotBtn").on("click", function() {
+            });
+
+
+
             $("#uploadForm1").on("submit", function(e) {
                 e.preventDefault();
                 const formData = new FormData(this);
@@ -229,7 +261,7 @@
                         console.log(data); // Assuming data contains the CSV file path and other details
                     },
                     error: function() {
-                        alert("Error uploading file.");
+                        console("Error uploading file.");
                     }
                 });
             });
